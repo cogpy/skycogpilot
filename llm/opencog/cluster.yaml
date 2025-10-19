@@ -59,105 +59,12 @@ setup: |
   echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
   
   # Create distributed OpenCog script
-  cat > ~/distributed_opencog.py << 'EOF'
-#!/usr/bin/env python3
-"""
-Distributed OpenCog Example
-
-This script demonstrates running OpenCog across multiple nodes
-for distributed AGI reasoning.
-"""
-
-import os
-import socket
-from opencog.atomspace import AtomSpace, types
-from opencog.utilities import initialize_opencog
-from opencog.type_constructors import *
-
-def get_node_info():
-    """Get information about this node."""
-    hostname = socket.gethostname()
-    node_rank = int(os.environ.get('SKYPILOT_NODE_RANK', 0))
-    node_ips = os.environ.get('SKYPILOT_NODE_IPS', '').split()
-    return hostname, node_rank, node_ips
-
-def create_distributed_knowledge_base(atomspace, node_rank, total_nodes):
-    """Create part of the knowledge base on this node."""
-    
-    print(f"Node {node_rank}: Creating knowledge partition...")
-    
-    # Each node creates a portion of the knowledge base
-    start_idx = node_rank * 100
-    end_idx = (node_rank + 1) * 100
-    
-    concepts = []
-    for i in range(start_idx, end_idx):
-        concept = ConceptNode(f'concept_{i}')
-        atomspace.add_atom(concept)
-        concepts.append(concept)
-    
-    # Create some relationships within this partition
-    for i in range(len(concepts) - 1):
-        if i % 10 == 0:  # Create some inheritance links
-            link = InheritanceLink(concepts[i], concepts[i + 1])
-            atomspace.add_atom(link)
-    
-    print(f"Node {node_rank}: Created {len(concepts)} concepts and relationships")
-    print(f"Node {node_rank}: AtomSpace size: {len(atomspace)}")
-
-def simulate_distributed_reasoning(atomspace, node_rank, node_ips):
-    """Simulate distributed reasoning across nodes."""
-    
-    print(f"Node {node_rank}: Starting distributed reasoning simulation...")
-    
-    # Count different types of atoms
-    concept_count = 0
-    link_count = 0
-    
-    for atom in atomspace:
-        if atom.type == types.ConceptNode:
-            concept_count += 1
-        elif atom.type == types.InheritanceLink:
-            link_count += 1
-    
-    print(f"Node {node_rank}: Local statistics:")
-    print(f"  Concepts: {concept_count}")
-    print(f"  Links: {link_count}")
-    print(f"  Total atoms: {len(atomspace)}")
-    
-    # In a real distributed system, nodes would communicate here
-    # For this demo, we just show what each node would contribute
-    print(f"Node {node_rank}: Would share {concept_count} concepts with other nodes")
-
-def main():
-    """Main function for distributed OpenCog."""
-    
-    hostname, node_rank, node_ips = get_node_info()
-    total_nodes = len(node_ips)
-    
-    print(f"Distributed OpenCog Node {node_rank}")
-    print(f"Hostname: {hostname}")
-    print(f"Total nodes: {total_nodes}")
-    print(f"Node IPs: {', '.join(node_ips)}")
-    print("=" * 50)
-    
-    # Initialize AtomSpace
-    atomspace = AtomSpace()
-    initialize_opencog(atomspace)
-    
-    # Create distributed knowledge base
-    create_distributed_knowledge_base(atomspace, node_rank, total_nodes)
-    
-    # Simulate distributed reasoning
-    simulate_distributed_reasoning(atomspace, node_rank, node_ips)
-    
-    print(f"Node {node_rank}: Distributed OpenCog setup complete!")
-
-if __name__ == "__main__":
-    main()
-EOF
-  
-  chmod +x ~/distributed_opencog.py
+  mkdir -p ~/scripts
+  echo '#!/usr/bin/env python3' > ~/scripts/distributed_opencog.py
+  echo 'print("Distributed OpenCog node ready!")' >> ~/scripts/distributed_opencog.py
+  echo 'import os' >> ~/scripts/distributed_opencog.py
+  echo 'print(f"Node rank: {os.environ.get(\"SKYPILOT_NODE_RANK\", 0)}")' >> ~/scripts/distributed_opencog.py
+  chmod +x ~/scripts/distributed_opencog.py
 
 run: |
   source ~/.bashrc
@@ -179,7 +86,7 @@ run: |
   
   # Run the distributed OpenCog script
   echo "Starting distributed OpenCog on node $NODE_RANK..."
-  python3 ~/distributed_opencog.py
+  python3 ~/scripts/distributed_opencog.py
   
   echo ""
   echo "===== Node $NODE_RANK Ready ====="
