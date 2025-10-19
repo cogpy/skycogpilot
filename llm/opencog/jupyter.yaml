@@ -1,0 +1,229 @@
+resources:
+  cpus: 4
+  memory: 8
+  disk_size: 50
+
+num_nodes: 1
+
+workdir: .
+
+ports: 8888
+
+setup: |
+  # Update system packages
+  sudo apt-get update
+  
+  # Install OpenCog dependencies
+  sudo apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    libboost-all-dev \
+    libcogutil-dev \
+    libatomspace-dev \
+    python3-dev \
+    python3-pip \
+    cython3 \
+    python3-setuptools \
+    python3-distutils \
+    pkg-config
+  
+  # Install Jupyter and data science stack
+  pip3 install --user \
+    opencog \
+    atomspace \
+    jupyter \
+    notebook \
+    ipython \
+    numpy \
+    scipy \
+    matplotlib \
+    pandas \
+    plotly \
+    networkx \
+    graphviz \
+    ipywidgets \
+    jupyterlab
+  
+  # Install OpenCog
+  git clone https://github.com/opencog/opencog.git
+  cd opencog
+  mkdir build
+  cd build
+  cmake ..
+  make -j$(nproc)
+  sudo make install
+  cd ../..
+  
+  # Set up environment
+  echo 'export PYTHONPATH=/usr/local/lib/python3/dist-packages:$PYTHONPATH' >> ~/.bashrc
+  echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+  
+  # Create Jupyter notebook with OpenCog examples
+  mkdir -p ~/notebooks
+  
+  # Create example notebook
+  cat > ~/notebooks/opencog_intro.ipynb << 'EOF'
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# OpenCog Introduction Notebook\n",
+    "\n",
+    "This notebook provides an introduction to OpenCog's AtomSpace and basic AGI concepts."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Import OpenCog modules\n",
+    "from opencog.atomspace import AtomSpace, types\n",
+    "from opencog.utilities import initialize_opencog\n",
+    "from opencog.type_constructors import *\n",
+    "\n",
+    "print('OpenCog imported successfully!')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Initialize AtomSpace\n",
+    "atomspace = AtomSpace()\n",
+    "initialize_opencog(atomspace)\n",
+    "\n",
+    "print(f'AtomSpace initialized with {len(atomspace)} atoms')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create basic concepts\n",
+    "cat = ConceptNode('cat')\n",
+    "animal = ConceptNode('animal')\n",
+    "mammal = ConceptNode('mammal')\n",
+    "\n",
+    "# Create relationships\n",
+    "cat_is_animal = InheritanceLink(cat, animal)\n",
+    "cat_is_mammal = InheritanceLink(cat, mammal)\n",
+    "\n",
+    "# Add to atomspace\n",
+    "atomspace.add_atom(cat_is_animal)\n",
+    "atomspace.add_atom(cat_is_mammal)\n",
+    "\n",
+    "print(f'Created knowledge: {cat} is an {animal}')\n",
+    "print(f'Created knowledge: {cat} is a {mammal}')\n",
+    "print(f'AtomSpace now contains {len(atomspace)} atoms')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Visualize the knowledge graph\n",
+    "import matplotlib.pyplot as plt\n",
+    "import networkx as nx\n",
+    "\n",
+    "# Create a simple visualization\n",
+    "G = nx.DiGraph()\n",
+    "G.add_edge('cat', 'animal')\n",
+    "G.add_edge('cat', 'mammal')\n",
+    "\n",
+    "plt.figure(figsize=(8, 6))\n",
+    "pos = nx.spring_layout(G)\n",
+    "nx.draw(G, pos, with_labels=True, node_color='lightblue', \n",
+    "        node_size=2000, font_size=16, arrows=True)\n",
+    "plt.title('Simple OpenCog Knowledge Graph')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Explore More\n",
+    "\n",
+    "Try creating your own concepts and relationships!\n",
+    "\n",
+    "Ideas to explore:\n",
+    "- Create more complex inheritance hierarchies\n",
+    "- Add numerical truth values to atoms\n",
+    "- Experiment with different atom types\n",
+    "- Try pattern matching and reasoning"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.10"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
+EOF
+
+run: |
+  source ~/.bashrc
+  
+  echo "===== Starting OpenCog Jupyter Environment ====="
+  echo ""
+  
+  # Test OpenCog installation
+  cat > test_jupyter_opencog.py << 'EOF'
+from opencog.atomspace import AtomSpace
+from opencog.utilities import initialize_opencog
+atomspace = AtomSpace()
+initialize_opencog(atomspace)
+print("OpenCog successfully installed and working!")
+print(f"AtomSpace initialized with {len(atomspace)} atoms")
+EOF
+  
+  python3 test_jupyter_opencog.py
+  
+  echo ""
+  echo "===== Jupyter Notebook Server Starting ====="
+  echo ""
+  echo "Jupyter will be available at:"
+  echo "  http://localhost:8888"
+  echo ""
+  echo "If running on a cloud instance, you may need to set up port forwarding:"
+  echo "  sky launch -c opencog-jupyter jupyter.yaml"
+  echo "  ssh -L 8888:localhost:8888 opencog-jupyter"
+  echo ""
+  
+  # Start Jupyter notebook
+  cd ~/notebooks
+  python3 -m jupyter notebook \
+    --ip=0.0.0.0 \
+    --port=8888 \
+    --no-browser \
+    --allow-root \
+    --NotebookApp.token='' \
+    --NotebookApp.password=''

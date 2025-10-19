@@ -1,0 +1,195 @@
+resources:
+  cpus: 8
+  memory: 16
+  disk_size: 100
+
+num_nodes: 1
+
+workdir: .
+
+file_mounts:
+  /opencog_experiments: 
+    name: # Optional: specify bucket name for persistent storage
+    mode: MOUNT
+
+setup: |
+  # Update system packages
+  sudo apt-get update
+  
+  # Install comprehensive build tools and dependencies
+  sudo apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    libboost-all-dev \
+    libcogutil-dev \
+    libatomspace-dev \
+    python3-dev \
+    python3-pip \
+    cython3 \
+    python3-setuptools \
+    python3-distutils \
+    pkg-config \
+    libgmp-dev \
+    libtbb-dev \
+    binutils-dev \
+    uuid-dev \
+    libzmq3-dev \
+    libssl-dev \
+    tcl-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    zlib1g-dev \
+    libffi-dev \
+    libeigen3-dev
+  
+  # Install Python scientific computing stack
+  pip3 install --user \
+    opencog \
+    atomspace \
+    numpy \
+    scipy \
+    matplotlib \
+    pandas \
+    scikit-learn \
+    jupyter \
+    notebook \
+    ipython \
+    networkx \
+    graphviz \
+    plotly \
+    seaborn
+  
+  # Clone and build OpenCog from source for full features
+  git clone --recursive https://github.com/opencog/opencog.git
+  cd opencog
+  mkdir build
+  cd build
+  cmake -DCMAKE_BUILD_TYPE=Release ..
+  make -j$(nproc)
+  sudo make install
+  cd ../..
+  
+  # Clone additional OpenCog modules
+  git clone https://github.com/opencog/atomspace.git
+  git clone https://github.com/opencog/cogutil.git
+  git clone https://github.com/opencog/opencog-to-minecraft.git || echo "Optional minecraft module not available"
+  
+  # Install additional AGI-related tools
+  pip3 install --user \
+    torch \
+    transformers \
+    nltk \
+    spacy \
+    gensim
+  
+  # Set up comprehensive OpenCog environment
+  echo 'export PYTHONPATH=/usr/local/lib/python3/dist-packages:$PYTHONPATH' >> ~/.bashrc
+  echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+  echo 'export OPENCOG_SOURCE_DIR=$HOME/opencog' >> ~/.bashrc
+  
+  # Create workspace directory
+  mkdir -p /opencog_experiments/workspace
+  mkdir -p /opencog_experiments/data
+  mkdir -p /opencog_experiments/results
+
+run: |
+  source ~/.bashrc
+  
+  echo "===== OpenCog Development Environment Setup Complete ====="
+  echo "OpenCog installation details:"
+  echo "  OpenCog source: $HOME/opencog"
+  echo "  Workspace: /opencog_experiments/workspace"
+  echo "  Data: /opencog_experiments/data"
+  echo "  Results: /opencog_experiments/results"
+  echo ""
+  
+  # Run comprehensive OpenCog test
+  cat > test_dev_opencog.py << 'EOF'
+import sys
+sys.path.append("/usr/local/lib/python3/dist-packages")
+
+from opencog.atomspace import AtomSpace, types
+from opencog.utilities import initialize_opencog
+from opencog.type_constructors import *
+
+print("=== OpenCog Development Environment Test ===")
+
+# Initialize AtomSpace
+atomspace = AtomSpace()
+initialize_opencog(atomspace)
+
+print("AtomSpace initialized successfully!")
+
+# Create knowledge representation example
+human = ConceptNode("human")
+animal = ConceptNode("animal") 
+mortal = ConceptNode("mortal")
+
+# Create inheritance relationships
+inheritance1 = InheritanceLink(human, animal)
+inheritance2 = InheritanceLink(animal, mortal)
+
+print(f"Created inheritance: {human} -> {animal}")
+print(f"Created inheritance: {animal} -> {mortal}")
+
+# Add to atomspace
+atomspace.add_atom(inheritance1)
+atomspace.add_atom(inheritance2)
+
+print(f"AtomSpace now contains {len(atomspace)} atoms")
+
+# Create a simple reasoning example
+socrates = ConceptNode("Socrates")
+human_socrates = InheritanceLink(socrates, human)
+atomspace.add_atom(human_socrates)
+
+print(f"Added: {socrates} is a {human}")
+print(f"By transitivity: {socrates} should be mortal")
+
+print("\n=== Available OpenCog modules ===")
+try:
+    import opencog.cogserver
+    print("✓ CogServer available")
+except ImportError:
+    print("✗ CogServer not available")
+
+try:
+    import opencog.nlp
+    print("✓ NLP module available")
+except ImportError:
+    print("✗ NLP module not available")
+
+try:
+    from opencog.pln import *
+    print("✓ PLN (Probabilistic Logic Networks) available")
+except ImportError:
+    print("✗ PLN not available")
+
+print("\n=== Development environment ready! ===")
+EOF
+  
+  python3 test_dev_opencog.py
+  
+  echo ""
+  echo "===== Development Environment Ready ====="
+  echo ""
+  echo "Available commands:"
+  echo "  opencog          - Run OpenCog shell"
+  echo "  guile            - Run Scheme/Guile interpreter with OpenCog"
+  echo "  python3          - Python with OpenCog modules"
+  echo ""
+  echo "SSH into this instance for development:"
+  echo "  sky ssh opencog-dev"
+  echo ""
+  echo "Directory structure:"
+  echo "  ~/opencog/               - OpenCog source code"
+  echo "  /opencog_experiments/    - Your persistent experiments"
+  echo ""
+  
+  # Keep running for development
+  echo "Development environment is ready. Use 'sky down opencog-dev' to terminate."
+  sleep infinity

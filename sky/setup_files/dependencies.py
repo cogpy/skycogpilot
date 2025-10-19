@@ -247,6 +247,27 @@ cloud_extras = {
     for cloud, dependencies in cloud_dependencies.items()
 }
 
+opencog_dependencies = [
+    # Core OpenCog dependencies
+    'opencog',
+    'atomspace',
+    # Scientific computing and ML integration
+    'numpy',
+    'scipy',
+    'matplotlib',
+    'pandas',
+    'scikit-learn',
+    'networkx',
+    # Optional AI/ML frameworks for neural-symbolic integration
+    'torch',
+    'transformers',
+    'nltk',
+    'spacy',
+    # Notebook support
+    'jupyter',
+    'ipython',
+]
+
 extras_require: Dict[str, List[str]] = {
     # Include server_dependencies with each cloud.
     **cloud_extras,
@@ -254,4 +275,6 @@ extras_require: Dict[str, List[str]] = {
                ),
     'remote': remote,
     'server': server_dependencies,
+    # OpenCog AGI framework support
+    'opencog': opencog_dependencies,
 }
