@@ -87,6 +87,8 @@ install_requires = [
     'alembic',
     'aiohttp',
     'anyio',
+    # OpenCog Hyperon for AGI infrastructure
+    'hyperon>=0.1.4.14',
 ]
 
 # See requirements-dev.txt for the version of grpc and protobuf

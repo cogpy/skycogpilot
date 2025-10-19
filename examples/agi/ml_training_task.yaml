@@ -1,0 +1,28 @@
+# Example SkyPilot task with AGI optimization
+name: ml_training_agi
+
+resources:
+  accelerators: T4:1
+  cpus: 4
+  memory: 16
+
+setup: |
+  pip install torch torchvision
+  pip install transformers datasets
+
+run: |
+  python -c "
+  import torch
+  import time
+  print('Training started with PyTorch', torch.__version__)
+  print('CUDA available:', torch.cuda.is_available())
+  if torch.cuda.is_available():
+      print('GPU:', torch.cuda.get_device_name(0))
+  
+  # Simulate training
+  for epoch in range(5):
+      print(f'Epoch {epoch + 1}/5')
+      time.sleep(2)  # Simulate training time
+  
+  print('Training completed!')
+  "
