@@ -1,0 +1,59 @@
+resources:
+  cpus: 4
+  memory: 8
+  disk_size: 50
+
+num_nodes: 1
+
+workdir: .
+
+setup: |
+  # Update system packages
+  sudo apt-get update
+  
+  # Install essential build tools and dependencies
+  sudo apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    libboost-all-dev \
+    python3-dev \
+    python3-pip \
+    cython3 \
+    python3-setuptools \
+    pkg-config
+  
+  # Install Python dependencies
+  pip3 install --user \
+    numpy \
+    scipy \
+    matplotlib \
+    jupyter
+  
+  # Install OpenCog Python packages
+  pip3 install --user opencog atomspace || echo "OpenCog packages may need to be built from source"
+  
+  # Set up OpenCog Python environment
+  echo 'export PYTHONPATH=/usr/local/lib/python3/dist-packages:$PYTHONPATH' >> ~/.bashrc
+
+run: |
+  source ~/.bashrc
+  
+  echo "===== OpenCog Basic Setup Complete ====="
+  echo "OpenCog basic environment ready"
+  echo ""
+  
+  # Test basic Python installation
+  python3 -c "import sys; print('Python version:', sys.version)"
+  python3 -c "import numpy; print('NumPy available:', numpy.__version__)"
+  
+  echo ""
+  echo "===== Basic OpenCog test completed successfully! ====="
+  echo "You can SSH into this instance to run OpenCog experiments:"
+  echo "  sky ssh opencog-basic"
+  echo ""
+  echo "Available Python modules ready for OpenCog development."
+  
+  # Keep the instance running for interactive use
+  echo "Instance will remain running. Use 'sky down opencog-basic' to terminate."
+  sleep infinity

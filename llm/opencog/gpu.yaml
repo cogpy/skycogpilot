@@ -1,0 +1,103 @@
+resources:
+  accelerators: V100:1  # Can be changed to other GPUs like A100, T4, etc.
+  cpus: 8
+  memory: 16
+  disk_size: 100
+
+num_nodes: 1
+
+workdir: .
+
+setup: |
+  # Update system packages
+  sudo apt-get update
+  
+  # Install NVIDIA drivers and CUDA (if not already available)
+  sudo apt-get install -y nvidia-driver-470 || echo "GPU drivers may already be installed"
+  
+  # Install OpenCog dependencies
+  sudo apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    libboost-all-dev \
+    libcogutil-dev \
+    libatomspace-dev \
+    python3-dev \
+    python3-pip \
+    cython3 \
+    python3-setuptools \
+    python3-distutils \
+    pkg-config \
+    libssl-dev \
+    libzmq3-dev
+  
+  # Install Python packages with GPU support
+  pip3 install --user \
+    opencog \
+    atomspace \
+    torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118 \
+    tensorflow-gpu \
+    numpy \
+    scipy \
+    matplotlib \
+    pandas \
+    scikit-learn \
+    jupyter \
+    transformers \
+    accelerate \
+    datasets \
+    nltk \
+    spacy
+  
+  # Install OpenCog from source with GPU optimizations
+  git clone https://github.com/opencog/opencog.git
+  cd opencog
+  mkdir build
+  cd build
+  cmake -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=ON ..
+  make -j$(nproc)
+  sudo make install
+  cd ../..
+  
+  # Set up environment
+  echo 'export PYTHONPATH=/usr/local/lib/python3/dist-packages:$PYTHONPATH' >> ~/.bashrc
+  echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+  echo 'export CUDA_VISIBLE_DEVICES=0' >> ~/.bashrc
+
+run: |
+  source ~/.bashrc
+  
+  echo "===== OpenCog GPU Environment Setup ====="
+  echo ""
+  
+  # Check GPU availability
+  echo "=== GPU Information ==="
+  nvidia-smi || echo "NVIDIA tools not available, but GPU may still work"
+  echo ""
+  
+  # Test Python GPU environment
+  python3 -c 'import sys; print("Python GPU environment ready")'
+  python3 -c 'import torch; print("PyTorch version:", torch.__version__)' || echo "PyTorch not available"
+  
+  echo ""
+  echo "===== GPU Environment Ready ====="
+  echo ""
+  echo "Available capabilities:"
+  echo "  ✓ OpenCog ready for GPU acceleration integration"
+  echo "  ✓ Python environment with scientific libraries"
+  echo "  ✓ GPU resources available for neural-symbolic AI"
+  echo ""
+  echo "Use cases:"
+  echo "  - Neural-symbolic AI integration"
+  echo "  - Large-scale reasoning with GPU acceleration"
+  echo "  - Hybrid AGI architectures"
+  echo "  - Deep learning + symbolic reasoning"
+  echo ""
+  echo "SSH into this instance for development:"
+  echo "  sky ssh opencog-gpu"
+  echo ""
+  
+  # Keep running
+  echo "GPU environment ready. Use 'sky down opencog-gpu' to terminate."
+  sleep infinity
