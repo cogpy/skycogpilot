@@ -82,6 +82,7 @@ _set_http_proxy_env_vars()
 
 # Keep this order to avoid cyclic imports
 # pylint: disable=wrong-import-position
+from sky import agi
 from sky import backends
 from sky import clouds
 from sky.admin_policy import AdminPolicy
@@ -187,6 +188,8 @@ __all__ = [
     'JobStatus',
     'ManagedJobStatus',
     'StatusRefreshMode',
+    # AGI Module
+    'agi',
     # APIs
     'Dag',
     'Task',

@@ -29,6 +29,17 @@ from sky.utils import subprocess_utils
 from sky.utils import timeline
 from sky.utils import ux_utils
 
+# AGI integration
+try:
+    from sky.agi.config import is_agi_enabled, should_use_agi_for_task
+    from sky.agi.optimizer import AGIOptimizer
+    AGI_AVAILABLE = True
+except ImportError:
+    AGI_AVAILABLE = False
+    is_agi_enabled = lambda: False
+    should_use_agi_for_task = lambda x: False
+    AGIOptimizer = None
+
 if typing.TYPE_CHECKING:
     import networkx as nx
 
@@ -124,17 +135,49 @@ class Optimizer:
                 for a task.
             exceptions.NoCloudAccessError: if no public clouds are enabled.
         """
+        # Check if AGI-enhanced optimization should be used
+        use_agi = AGI_AVAILABLE and is_agi_enabled()
+        if use_agi:
+            # Check if any task would benefit from AGI
+            agi_beneficial = any(
+                should_use_agi_for_task('medium')  # Default to medium complexity
+                for _ in dag.tasks
+            )
+            if agi_beneficial and not quiet:
+                logger.info("Using AGI-enhanced optimization")
+        
         with rich_utils.safe_status(ux_utils.spinner_message('Optimizing')):
             _check_specified_clouds(dag)
             # This function is effectful: mutates every node in 'dag' by setting
             # node.best_resources if it is None.
             Optimizer._add_dummy_source_sink_nodes(dag)
             try:
-                unused_best_plan = Optimizer._optimize_dag(
-                    dag=dag,
-                    minimize_cost=minimize == common.OptimizeTarget.COST,
-                    blocked_resources=blocked_resources,
-                    quiet=quiet)
+                # Use AGI optimizer if available and beneficial
+                if use_agi and agi_beneficial:
+                    try:
+                        agi_optimizer = AGIOptimizer()
+                        unused_best_plan = agi_optimizer.optimize(
+                            dag, 
+                            minimize=minimize.value if hasattr(minimize, 'value') else str(minimize),
+                            blocked_resources=set(blocked_resources) if blocked_resources else None
+                        )
+                        if not quiet:
+                            logger.info("AGI optimization completed successfully")
+                    except Exception as e:
+                        if not quiet:
+                            logger.warning(f"AGI optimization failed, falling back to standard: {e}")
+                        # Fallback to standard optimization
+                        unused_best_plan = Optimizer._optimize_dag(
+                            dag=dag,
+                            minimize_cost=minimize == common.OptimizeTarget.COST,
+                            blocked_resources=blocked_resources,
+                            quiet=quiet)
+                else:
+                    unused_best_plan = Optimizer._optimize_dag(
+                        dag=dag,
+                        minimize_cost=minimize == common.OptimizeTarget.COST,
+                        blocked_resources=blocked_resources,
+                        quiet=quiet)
             finally:
                 # Make sure to remove the dummy source/sink nodes, even if the
                 # optimization fails.
